@@ -82,6 +82,10 @@ export default Vue.extend({
   },
   methods: {
     ...mapActions('module3', ['action1']),
+    ...mapActions({
+      'fetchTest': 'test/fetchTest',
+      'fetchAnonymous': 'test/fetchAnonymous',
+    }),
     increment():number {
       return this.numData++
     },

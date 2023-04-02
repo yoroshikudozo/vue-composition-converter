@@ -93,26 +93,45 @@ export const getMethodExpression = (
       },
     ];
   } else if (ts.isSpreadAssignment(node)) {
-    // mapActions
-    if (!ts.isCallExpression(node.expression)) return [];
-    const { arguments: args, expression } = node.expression;
-    if (!ts.isIdentifier(expression)) return [];
-    const mapName = expression.text;
-    const [namespace, mapArray] = args;
-    if (!ts.isStringLiteral(namespace)) return [];
-    if (!ts.isArrayLiteralExpression(mapArray)) return [];
+    return convertMapActions(node);
+  }
+  return [];
+};
 
-    const namespaceText = namespace.text;
-    const names = mapArray.elements as ts.NodeArray<ts.StringLiteral>;
+const convertMapActions = (node: ts.SpreadAssignment) => {
+  if (!ts.isCallExpression(node.expression)) return [];
 
-    if (mapName === "mapActions") {
-      return names.map(({ text: name }) => {
-        return {
-          expression: `const ${name} = () => ${storePath}.dispatch('${namespaceText}/${name}')`,
-          returnNames: [name],
-        };
-      });
+  const { arguments: args, expression } = node.expression;
+  if (!ts.isIdentifier(expression)) return [];
+  const mapName = expression.text;
+  if (mapName === "mapActions") {
+    if (ts.isStringLiteral(args[0])) {
+      if (ts.isArrayLiteralExpression(args[1])) {
+        const namespace = args[0];
+        const namespaceText = namespace.text;
+        const mapArray = args[1];
+        const names = mapArray.elements as ts.NodeArray<ts.StringLiteral>;
+
+        return names.map(({ text: name }) => {
+          return {
+            expression: `const ${name} = () => ${storePath}.dispatch('${namespaceText}/${name}')`,
+            returnNames: [name],
+          };
+        });
+      }
+    } else if (ts.isObjectLiteralExpression(args[0])) {
+      return args[0].properties
+        .filter(ts.isPropertyAssignment)
+        .map((property) => {
+          const name = property.name as ts.Identifier;
+          const initializer = property.initializer as ts.Identifier;
+          return {
+            expression: `const ${name.text} = () => ${storePath}.dispatch('${initializer.text}')`,
+            returnNames: [name.text],
+          };
+        });
     }
+    return [];
   }
   return [];
 };
