@@ -15,34 +15,16 @@ export const computedConverter = (
       if (ts.isSpreadAssignment(prop)) {
         // mapGetters, mapState
         if (!ts.isCallExpression(prop.expression)) return;
-        const { arguments: args, expression } = prop.expression;
 
+        const { expression } = prop.expression;
         if (!ts.isIdentifier(expression)) return;
-        const mapName = expression.text;
-        const [namespace, mapArray] = args;
-        if (!ts.isStringLiteral(namespace)) return;
-        if (!ts.isArrayLiteralExpression(mapArray)) return;
 
-        const namespaceText = namespace.text;
-        const names = mapArray.elements as ts.NodeArray<ts.StringLiteral>;
-
-        switch (mapName) {
+        switch (expression.text) {
           case "mapState":
-            return names.map(({ text: name }) => {
-              return {
-                use: "computed",
-                expression: `const ${name} = computed(() => ${storePath}.state.${namespaceText}.${name})`,
-                returnNames: [name],
-              };
-            });
+            return convertMapState(prop.expression);
           case "mapGetters":
-            return names.map(({ text: name }) => {
-              return {
-                use: "computed",
-                expression: `const ${name} = computed(() => ${storePath}.getters['${namespaceText}/${name}'])`,
-                returnNames: [name],
-              };
-            });
+            // console.log("mapGetters", names);
+            return convertMapGetters(prop.expression);
         }
         return null;
       } else if (ts.isMethodDeclaration(prop)) {
@@ -73,4 +55,58 @@ export const computedConverter = (
     })
     .flat()
     .filter(nonNull);
+};
+
+const convertMapState = (
+  expression: ts.CallExpression
+): ConvertedExpression[] => {
+  const { arguments: args } = expression;
+
+  const [namespace, mapArray] = args;
+  if (!ts.isStringLiteral(namespace)) return [];
+  if (!ts.isArrayLiteralExpression(mapArray)) return [];
+
+  const namespaceText = namespace.text;
+  const names = mapArray.elements as ts.NodeArray<ts.StringLiteral>;
+
+  return names.map(({ text: name }) => {
+    return {
+      use: "computed",
+      expression: `const ${name} = computed(() => ${storePath}.state.${namespaceText}.${name})`,
+      returnNames: [name],
+    };
+  });
+};
+
+const convertMapGetters = (
+  expression: ts.CallExpression
+): ConvertedExpression[] => {
+  const { arguments: args } = expression;
+  if (ts.isStringLiteral(args[0])) {
+    if (ts.isArrayLiteralExpression(args[1])) {
+      const mapArray = args[1] as ts.ArrayLiteralExpression;
+      const namespaceText = args[0].text;
+      const names = mapArray.elements as ts.NodeArray<ts.StringLiteral>;
+      return names.map(({ text: name }) => {
+        return {
+          use: "computed",
+          expression: `const ${name} = computed(() => ${storePath}.getters['${namespaceText}/${name}'])`,
+          returnNames: [name],
+        };
+      });
+    }
+  } else if (ts.isObjectLiteralExpression(args[0])) {
+    return args[0].properties
+      .filter(ts.isPropertyAssignment)
+      .map((property) => {
+        const name = property.name as ts.Identifier;
+        const initializer = property.initializer as ts.Identifier;
+        return {
+          use: "computed",
+          expression: `const ${name.text} = computed(() => ${storePath}.getters['${initializer.text}'])`,
+          returnNames: [name.text],
+        };
+      });
+  }
+  return [];
 };

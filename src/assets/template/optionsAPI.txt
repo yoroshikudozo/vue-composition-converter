@@ -32,6 +32,10 @@ export default Vue.extend({
   },
   computed: {
     ...mapGetters('module1', ['getter1']),
+    ...mapGetters({
+      getValueById: 'module3/getTextValueById',
+      getValues: 'module3/getTextValues',
+    }),
     ...mapState('module2', ['state1']),
     doubledNum(): number {
       return this.numData * 2
