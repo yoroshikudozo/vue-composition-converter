@@ -3,15 +3,17 @@ import { parseComponent } from "vue-template-compiler";
 import { getNodeByKind } from "./helper";
 import { convertClass } from "./converters/classApiConverter";
 import { convertOptionsApi } from "./converters/optionsApiConverter";
+import { getReplacer } from "./converters/replace";
 
 export const convertSrc = (input: string): string => {
   const parsed = parseComponent(input);
   const { script } = parsed;
-  const scriptContent = script?.content || "";
+  if (!script) throw new Error("no convert target");
+  const replacer = getReplacer(input, script);
 
   const sourceFile = ts.createSourceFile(
     "src.tsx",
-    scriptContent,
+    script.content,
     ts.ScriptTarget.Latest
   );
 
@@ -21,7 +23,8 @@ export const convertSrc = (input: string): string => {
   );
   if (exportAssignNode) {
     // optionsAPI
-    return convertOptionsApi(sourceFile);
+    const converted = convertOptionsApi(sourceFile);
+    return replacer(converted);
   }
 
   const classNode = getNodeByKind(sourceFile, ts.SyntaxKind.ClassDeclaration);
