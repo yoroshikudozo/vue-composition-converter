@@ -4,6 +4,7 @@ import prettier from "prettier";
 import parserHtml from "prettier/parser-html";
 import parserTypeScript from "prettier/parser-typescript";
 import hljs from "highlight.js/lib/core";
+import hljsDefineVue from "highlightjs-vue";
 import typescript from "highlight.js/lib/languages/typescript";
 import "highlight.js/styles/atom-one-dark.css";
 import { convertSrc } from "../lib/converter";
@@ -11,6 +12,7 @@ import classApi from "../assets/template/classAPI.txt?raw";
 import optionsApi from "../assets/template/optionsAPI.txt?raw";
 
 hljs.registerLanguage("typescript", typescript);
+hljsDefineVue(hljs);
 
 const templateMap = new Map([
   ["optionsAPI", optionsApi],
