@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "highlight.js": "^11.5.1",
+    "highlightjs-vue": "^1.0.0",
     "vue": "^3.2.33",
     "vue-template-compiler": "^2.6.14"
   },
