@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import { ref, watch } from "vue";
 import prettier from "prettier";
-import parserHtml from "prettier/parser-html";
+import vueParser from "prettier/parser-html";
+import parserBabel from "prettier/parser-babel";
 import parserTypeScript from "prettier/parser-typescript";
 import hljs from "highlight.js/lib/core";
 import hljsDefineVue from "highlightjs-vue";
+import javascript from "highlight.js/lib/languages/javascript";
 import typescript from "highlight.js/lib/languages/typescript";
 import "highlight.js/styles/atom-one-dark.css";
 import { convertSrc } from "../lib/converter";
@@ -12,6 +14,7 @@ import classApi from "../assets/template/classAPI.txt?raw";
 import optionsApi from "../assets/template/optionsAPI.txt?raw";
 
 hljs.registerLanguage("typescript", typescript);
+hljs.registerLanguage("javascript", javascript);
 hljsDefineVue(hljs);
 
 const templateMap = new Map([
@@ -28,7 +31,7 @@ const selectedTemplate = ref(templateKeys[0]);
 const getPrettiefied = (input: string) =>
   prettier.format(input, {
     parser: "vue",
-    plugins: [parserHtml, parserTypeScript],
+    plugins: [vueParser, parserBabel, parserTypeScript],
   });
 watch(
   selectedTemplate,
